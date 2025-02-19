@@ -1,1 +1,1 @@
-# [TEMPLATE] ImageSimilarity
+# ImageSimilarity
