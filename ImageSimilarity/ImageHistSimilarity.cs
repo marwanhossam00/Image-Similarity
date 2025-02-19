@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static ImageSimilarity.ImageOperations;
+using System.Runtime.InteropServices;
 
 namespace ImageSimilarity
 {
@@ -42,7 +43,13 @@ namespace ImageSimilarity
         /// <returns>Calculated stats of the given image</returns>
         public static ImageInfo CalculateImageStats(string imgPath)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            ImageInfo result = new ImageInfo();
+            result.Path = imgPath;
+            RGBPixel[,] img2darray = ImageOperations.OpenImage(imgPath);
+            result.Height = img2darray.GetLength(0);
+            result.Width = img2darray.GetLength(1);
+            return result;
         }
         /// <summary>
         /// Load all target images and calculate their stats
@@ -51,7 +58,18 @@ namespace ImageSimilarity
         /// <returns>Calculated stats of each target image</returns>
         public static ImageInfo[] LoadAllImages(string []targetPaths)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+
+            ImageInfo[] targetImgStats = new ImageInfo[targetPaths.Length];
+            
+            Task<ImageInfo>[] calculate_threads = new Task<ImageInfo>[targetPaths.Length];
+            for (int i = 0; i < targetPaths.Length; i++)
+            {
+                calculate_threads[i] = Task.Run(() => CalculateImageStats(targetPaths[i]));
+                targetImgStats[i] = calculate_threads[i].Result;
+            }
+            Task.WaitAll(calculate_threads);
+            return targetImgStats;
         }
 
         /// <summary>

@@ -85,7 +85,9 @@ namespace ImageSimilarity
                     }
                 }
                 catch (Exception ex)
-                { MessageBox.Show(ex.Message); }
+                {
+                    MessageBox.Show(ex.Message); 
+                }
             }
         }
 
@@ -376,6 +378,7 @@ namespace ImageSimilarity
                 imageInfo.BlueStats.StdDev = sr.ReadDouble();
 
                 imgsInfo.Add(imageInfo.Path, imageInfo);
+
             }
 
             s.Close();
@@ -404,27 +407,27 @@ namespace ImageSimilarity
                 //Red Stats
                 if (imgInf1.RedStats.Min != imgInf2.RedStats.Min)
                 {
-                    msg += $"Red Max Mismatch! Expected {imgInf1.RedStats.Min} Actual {imgInf2.RedStats.Min}\n";
+                    msg += $"Red Max Mismatch! Actual {imgInf1.RedStats.Min} Expected {imgInf2.RedStats.Min}\n";
                     correct = false;
                 }
                 if (imgInf1.RedStats.Max != imgInf2.RedStats.Max)
                 {
-                    msg += $"Red Max Mismatch! Expected {imgInf1.RedStats.Max} Actual {imgInf2.RedStats.Max}\n";
+                    msg += $"Red Max Mismatch! Actual {imgInf1.RedStats.Max} Expected {imgInf2.RedStats.Max}\n";
                     correct = false;
                 }
                 if (imgInf1.RedStats.Med != imgInf2.RedStats.Med)
                 {
-                    msg += $"Red Med Mismatch! Expected {imgInf1.RedStats.Med} Actual {imgInf2.RedStats.Med}\n";
+                    msg += $"Red Med Mismatch! Actual {imgInf1.RedStats.Med} Expected {imgInf2.RedStats.Med}\n";
                     correct = false;
                 }
                 if (Math.Round(imgInf1.RedStats.Mean, 5) != Math.Round(imgInf2.RedStats.Mean, 5))
                 {
-                    msg += $"Red Mean Mismatch! Expected {Math.Round(imgInf1.RedStats.Mean, 5)} Actual {Math.Round(imgInf2.RedStats.Mean, 5)}\n";
+                    msg += $"Red Mean Mismatch! Actual {Math.Round(imgInf1.RedStats.Mean, 5)} Expected {Math.Round(imgInf2.RedStats.Mean, 5)}\n";
                     correct = false;
                 }
                 if (Math.Round(imgInf1.RedStats.StdDev, 5) != Math.Round(imgInf2.RedStats.StdDev, 5))
                 {
-                    msg += $"Red StdDev Mismatch! Expected {Math.Round(imgInf1.RedStats.StdDev, 5)} Actual {Math.Round(imgInf2.RedStats.StdDev, 5)}\n";
+                    msg += $"Red StdDev Mismatch! Actual {Math.Round(imgInf1.RedStats.StdDev, 5)} Expected {Math.Round(imgInf2.RedStats.StdDev, 5)}\n";
                     correct = false;
                 }
                 for (int i = 0; i < 256; i++)
@@ -438,27 +441,27 @@ namespace ImageSimilarity
                 //Green Stats
                 if (imgInf1.GreenStats.Min != imgInf2.GreenStats.Min)
                 {
-                    msg += $"Green Max Mismatch! Expected {imgInf1.GreenStats.Min} Actual {imgInf2.GreenStats.Min}\n";
+                    msg += $"Green Max Mismatch! Actual {imgInf1.GreenStats.Min} Expected {imgInf2.GreenStats.Min}\n";
                     correct = false;
                 }
                 if (imgInf1.GreenStats.Max != imgInf2.GreenStats.Max)
                 {
-                    msg += $"Green Max Mismatch! Expected {imgInf1.GreenStats.Max} Actual {imgInf2.GreenStats.Max}\n";
+                    msg += $"Green Max Mismatch! Actual {imgInf1.GreenStats.Max} Expected {imgInf2.GreenStats.Max}\n";
                     correct = false;
                 }
                 if (imgInf1.GreenStats.Med != imgInf2.GreenStats.Med)
                 {
-                    msg += $"Green Med Mismatch! Expected {imgInf1.GreenStats.Med} Actual {imgInf2.GreenStats.Med}\n";
+                    msg += $"Green Med Mismatch! Actual {imgInf1.GreenStats.Med} Expected {imgInf2.GreenStats.Med}\n";
                     correct = false;
                 }
                 if (Math.Round(imgInf1.GreenStats.Mean, 5) != Math.Round(imgInf2.GreenStats.Mean, 5))
                 {
-                    msg += $"Green Mean Mismatch! Expected {Math.Round(imgInf1.GreenStats.Mean, 5)} Actual {Math.Round(imgInf2.GreenStats.Mean, 5)}\n";
+                    msg += $"Green Mean Mismatch! Actual {Math.Round(imgInf1.GreenStats.Mean, 5)} Expected {Math.Round(imgInf2.GreenStats.Mean, 5)}\n";
                     correct = false;
                 }
                 if (Math.Round(imgInf1.GreenStats.StdDev, 5) != Math.Round(imgInf2.GreenStats.StdDev, 5))
                 {
-                    msg += $"Green StdDev Mismatch! Expected {Math.Round(imgInf1.GreenStats.StdDev, 5)} Actual {Math.Round(imgInf2.GreenStats.StdDev, 5)}\n";
+                    msg += $"Green StdDev Mismatch! Actual {Math.Round(imgInf1.GreenStats.StdDev, 5)} Expected {Math.Round(imgInf2.GreenStats.StdDev, 5)}\n";
                     correct = false;
                 }
                 for (int i = 0; i < 256; i++)
@@ -472,27 +475,27 @@ namespace ImageSimilarity
                 //Blue Stats
                 if (imgInf1.BlueStats.Min != imgInf2.BlueStats.Min)
                 {
-                    msg += $"Blue Max Mismatch! Expected {imgInf1.BlueStats.Min} Actual {imgInf2.BlueStats.Min}\n";
+                    msg += $"Blue Max Mismatch! Actual {imgInf1.BlueStats.Min} Expected {imgInf2.BlueStats.Min}\n";
                     correct = false;
                 }
                 if (imgInf1.BlueStats.Max != imgInf2.BlueStats.Max)
                 {
-                    msg += $"Blue Max Mismatch! Expected {imgInf1.BlueStats.Max} Actual {imgInf2.BlueStats.Max}\n";
+                    msg += $"Blue Max Mismatch! Actual {imgInf1.BlueStats.Max} Expected {imgInf2.BlueStats.Max}\n";
                     correct = false;
                 }
                 if (imgInf1.BlueStats.Med != imgInf2.BlueStats.Med)
                 {
-                    msg += $"Blue Med Mismatch! Expected {imgInf1.BlueStats.Med} Actual {imgInf2.BlueStats.Med}\n";
+                    msg += $"Blue Med Mismatch! Actual {imgInf1.BlueStats.Med} Expected {imgInf2.BlueStats.Med}\n";
                     correct = false;
                 }
                 if (Math.Round(imgInf1.BlueStats.Mean, 5) != Math.Round(imgInf2.BlueStats.Mean, 5))
                 {
-                    msg += $"Blue Mean Mismatch! Expected {Math.Round(imgInf1.BlueStats.Mean, 5)} Actual {Math.Round(imgInf2.BlueStats.Mean, 5)}\n";
+                    msg += $"Blue Mean Mismatch! Actual {Math.Round(imgInf1.BlueStats.Mean, 5)} Expected {Math.Round(imgInf2.BlueStats.Mean, 5)}\n";
                     correct = false;
                 }
                 if (Math.Round(imgInf1.BlueStats.StdDev, 5) != Math.Round(imgInf2.BlueStats.StdDev, 5))
                 {
-                    msg += $"Blue StdDev Mismatch! Expected {Math.Round(imgInf1.BlueStats.StdDev, 5)} Actual {Math.Round(imgInf2.BlueStats.StdDev, 5)}\n";
+                    msg += $"Blue StdDev Mismatch! Actual {Math.Round(imgInf1.BlueStats.StdDev, 5)} Expected {Math.Round(imgInf2.BlueStats.StdDev, 5)}\n";
                     correct = false;
                 }
                 for (int i = 0; i < 256; i++)
