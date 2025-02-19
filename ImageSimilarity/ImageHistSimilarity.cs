@@ -108,62 +108,85 @@ namespace ImageSimilarity
             int idx1 = size / 2;
             int idx2 = idx1 + 1;
 
-            int num1 = -1, num2 = -1;
+            int num1Red = -1, num2Red = -1, num1Green = -1, num2Green = -1, num1Blue = -1, num2Blue = -1; ;
 
-            int pref = 0;
+            int prefRed = 0, prefGreen = 0, prefBlue = 0;
             for (int i = 0; i < 256; ++i)
             {
-                if (even && num1 != -1 && num2 != -1) break;
-                if (!even && num1 != -1) break;
-                pref += redFreq[i];
-                if (pref >= idx1 && num1 == -1) num1 = i;
-                if (pref >= idx2 && num2 == -1) num2 = i;
+                if (!even && num1Red != -1 && num1Green != -1 && num1Blue != -1) break;
+                if (even && num1Red != -1 && num2Red != -1 && num1Green != -1 && num2Green != -1 && num1Blue != -1 && num2Blue != -1) break;
+                prefRed += redFreq[i];
+                prefGreen += greenFreq[i];
+                prefBlue += blueFreq[i];
+                if (prefRed >= idx1 && num1Red == -1) num1Red = i;
+                if (prefRed >= idx2 && num2Red == -1) num2Red = i;
+                if (prefGreen >= idx1 && num1Green == -1) num1Green = i;
+                if (prefGreen >= idx2 && num2Green == -1) num2Green = i;
+                if (prefBlue >= idx1 && num1Blue == -1) num1Blue = i;
+                if (prefBlue >= idx2 && num2Blue == -1) num2Blue = i;
             }
-            if (even) redStats.Med = (num1 + num2) / 2;
-            else      redStats.Med = num1;
-
-            pref = 0; num1 = -1; num2 = -1;
-            for (int i = 0; i < 256; ++i)
+            if (even)
             {
-                if (even && num1 != -1 && num2 != -1) break;
-                if (!even && num1 != -1) break;
-                pref += greenFreq[i];
-                if (pref >= idx1 && num1 == -1) num1 = i;
-                if (pref >= idx2 && num2 == -1) num2 = i;
+                redStats.Med = (num1Red + num2Red) / 2;
+                greenStats.Med = (num1Green + num2Green) / 2;
+                blueStats.Med = (num1Blue + num2Blue) / 2;
             }
-            if(even)    greenStats.Med = (num1 + num2) / 2;
-            else        greenStats.Med = num1;
-
-            pref = 0; num1 = -1; num2 = -1;
-            for (int i = 0; i < 256; ++i)
+            else
             {
-                if (even && num1 != -1 && num2 != -1) break;
-                if (!even && num1 != -1) break;
-                pref += blueFreq[i];
-                if (pref >= idx1 && num1 == -1) num1 = i;
-                if (pref >= idx2 && num2 == -1) num2 = i;
+                redStats.Med = num1Red;
+                greenStats.Med = num1Green;
+                blueStats.Med = num1Blue;
             }
-            if(even)    blueStats.Med = (num1 + num2) / 2;
-            else        blueStats.Med = num1;
+
+            //pref = 0; num1 = -1; num2 = -1;
+            //for (int i = 0; i < 256; ++i)
+            //{
+            //    if (even && num1 != -1 && num2 != -1) break;
+            //    if (!even && num1 != -1) break;
+            //    pref += greenFreq[i];
+            //    if (pref >= idx1 && num1 == -1) num1 = i;
+            //    if (pref >= idx2 && num2 == -1) num2 = i;
+            //}
+            //if(even)    greenStats.Med = (num1 + num2) / 2;
+            //else        greenStats.Med = num1;
+
+            //pref = 0; num1 = -1; num2 = -1;
+            //for (int i = 0; i < 256; ++i)
+            //{
+            //    if (even && num1 != -1 && num2 != -1) break;
+            //    if (!even && num1 != -1) break;
+            //    pref += blueFreq[i];
+            //    if (pref >= idx1 && num1 == -1) num1 = i;
+            //    if (pref >= idx2 && num2 == -1) num2 = i;
+            //}
+            //if(even)    blueStats.Med = (num1 + num2) / 2;
+            //else        blueStats.Med = num1;
 
             double redMean = redStats.Mean;
             double greenMean = greenStats.Mean;
             double blueMean = blueStats.Mean;
 
             double red_sum = 0, green_sum = 0, blue_sum = 0;
-            for (int i = 0; i < result.Height; i++)
-            {
-                for (int j = 0; j < result.Width; j++)
-                {
-                    int red = (int)img2darray[i, j].red;
-                    int green = (int)img2darray[i, j].green;
-                    int blue = (int)img2darray[i, j].blue;
 
-                    red_sum += Math.Pow(red - redMean,2);
-                    green_sum += Math.Pow(green - greenMean, 2);
-                    blue_sum += Math.Pow(blue - blueMean, 2);
-                }
+            for(int i = 0; i < 256; ++i)
+            {
+                red_sum += Math.Pow(i - redMean, 2) * redFreq[i];
+                green_sum += Math.Pow(i - greenMean, 2) * greenFreq[i];
+                blue_sum += Math.Pow(i - blueMean, 2) * blueFreq[i];
             }
+            //for (int i = 0; i < result.Height; i++)
+            //{
+            //    for (int j = 0; j < result.Width; j++)
+            //    {
+            //        int red = (int)img2darray[i, j].red;
+            //        int green = (int)img2darray[i, j].green;
+            //        int blue = (int)img2darray[i, j].blue;
+
+            //        red_sum += Math.Pow(red - redMean,2);
+            //        green_sum += Math.Pow(green - greenMean, 2);
+            //        blue_sum += Math.Pow(blue - blueMean, 2);
+            //    }
+            //}
 
             redStats.StdDev = Math.Sqrt(red_sum / ((double)size));
             greenStats.StdDev = Math.Sqrt(green_sum / ((double)size));
