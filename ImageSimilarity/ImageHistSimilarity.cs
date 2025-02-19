@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static ImageSimilarity.ImageOperations;
 using System.Runtime.InteropServices;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace ImageSimilarity
 {
@@ -49,6 +50,129 @@ namespace ImageSimilarity
             RGBPixel[,] img2darray = ImageOperations.OpenImage(imgPath);
             result.Height = img2darray.GetLength(0);
             result.Width = img2darray.GetLength(1);
+
+            int size = result.Width * result.Height;
+
+            ChannelStats redStats = new ChannelStats();
+            ChannelStats greenStats = new ChannelStats();
+            ChannelStats blueStats = new ChannelStats();
+
+            int[] redFreq = new int[256];
+            int[] greenFreq = new int[256];
+            int[] blueFreq = new int[256];
+
+            redStats.Max = int.MinValue;
+            redStats.Min = int.MaxValue;
+            greenStats.Max = int.MinValue;
+            greenStats.Min = int.MaxValue;
+            blueStats.Max = int.MinValue;
+            blueStats.Min = int.MaxValue;
+
+            double redSum = 0, greenSum = 0, blueSum = 0;
+
+            for (int i = 0; i < result.Height; i++)
+            {
+                for (int j = 0; j < result.Width; j++)
+                {
+                    int red = (int)img2darray[i,j].red;
+                    int green = (int)img2darray[i,j].green;
+                    int blue = (int)img2darray[i, j].blue;
+
+                    redFreq[red]++;
+                    greenFreq[green]++;
+                    blueFreq[blue]++;
+
+                    redSum += red;
+                    greenSum += green;
+                    blueSum += blue;
+
+                    if (red > redStats.Max) redStats.Max = red;
+                    if (red < redStats.Min) redStats.Min = red;
+                    if (green > greenStats.Max) greenStats.Max = green;
+                    if (green < greenStats.Min) greenStats.Min = green;
+                    if (blue > blueStats.Max) blueStats.Max = blue;
+                    if (blue < blueStats.Min) blueStats.Min = blue;
+                }
+            }
+           
+            redStats.Mean = redSum / ((double)size);
+            greenStats.Mean = greenSum / ((double)size);
+            blueStats.Mean = blueSum / ((double)size);
+            
+            redStats.Hist = redFreq;
+            greenStats.Hist = greenFreq;
+            blueStats.Hist = blueFreq;
+
+            bool even = false;
+            if ((size) % 2 == 0) even = true;
+            int idx1 = size / 2;
+            int idx2 = idx1 + 1;
+
+            int num1 = -1, num2 = -1;
+
+            int pref = 0;
+            for (int i = 0; i < 256; ++i)
+            {
+                if (even && num1 != -1 && num2 != -1) break;
+                if (!even && num1 != -1) break;
+                pref += redFreq[i];
+                if (pref >= idx1 && num1 == -1) num1 = i;
+                if (pref >= idx2 && num2 == -1) num2 = i;
+            }
+            if (even) redStats.Med = (num1 + num2) / 2;
+            else      redStats.Med = num1;
+
+            pref = 0; num1 = -1; num2 = -1;
+            for (int i = 0; i < 256; ++i)
+            {
+                if (even && num1 != -1 && num2 != -1) break;
+                if (!even && num1 != -1) break;
+                pref += greenFreq[i];
+                if (pref >= idx1 && num1 == -1) num1 = i;
+                if (pref >= idx2 && num2 == -1) num2 = i;
+            }
+            if(even)    greenStats.Med = (num1 + num2) / 2;
+            else        greenStats.Med = num1;
+
+            pref = 0; num1 = -1; num2 = -1;
+            for (int i = 0; i < 256; ++i)
+            {
+                if (even && num1 != -1 && num2 != -1) break;
+                if (!even && num1 != -1) break;
+                pref += blueFreq[i];
+                if (pref >= idx1 && num1 == -1) num1 = i;
+                if (pref >= idx2 && num2 == -1) num2 = i;
+            }
+            if(even)    blueStats.Med = (num1 + num2) / 2;
+            else        blueStats.Med = num1;
+
+            double redMean = redStats.Mean;
+            double greenMean = greenStats.Mean;
+            double blueMean = blueStats.Mean;
+
+            double red_sum = 0, green_sum = 0, blue_sum = 0;
+            for (int i = 0; i < result.Height; i++)
+            {
+                for (int j = 0; j < result.Width; j++)
+                {
+                    int red = (int)img2darray[i, j].red;
+                    int green = (int)img2darray[i, j].green;
+                    int blue = (int)img2darray[i, j].blue;
+
+                    red_sum += Math.Pow(red - redMean,2);
+                    green_sum += Math.Pow(green - greenMean, 2);
+                    blue_sum += Math.Pow(blue - blueMean, 2);
+                }
+            }
+
+            redStats.StdDev = Math.Sqrt(red_sum / ((double)size));
+            greenStats.StdDev = Math.Sqrt(green_sum / ((double)size));
+            blueStats.StdDev = Math.Sqrt(blue_sum / ((double)size));
+
+            result.RedStats = redStats;
+            result.GreenStats = greenStats;
+            result.BlueStats = blueStats;
+
             return result;
         }
         /// <summary>
