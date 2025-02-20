@@ -30,8 +30,12 @@ namespace ImageSimilarity
         public ChannelStats BlueStats;
     }
 
-    public struct MatchInfo
+    public struct MatchInfo : IComparable<MatchInfo>
     {
+        public int CompareTo(MatchInfo b)
+        {
+            return this.MatchScore.CompareTo(b.MatchScore);
+        }
         public string MatchedImgPath;
         public double MatchScore;
     }
@@ -108,61 +112,47 @@ namespace ImageSimilarity
             int idx1 = size / 2;
             int idx2 = idx1 + 1;
 
-            int num1 = -1, num2 = -1;
+            int num1Red = -1, num2Red = -1, num1Green = -1, num2Green = -1, num1Blue = -1, num2Blue = -1; ;
 
-            int pref = 0;
+            int prefRed = 0, prefGreen = 0, prefBlue = 0;
             for (int i = 0; i < 256; ++i)
             {
-                if (even && num1 != -1 && num2 != -1) break;
-                if (!even && num1 != -1) break;
-                pref += redFreq[i];
-                if (pref >= idx1 && num1 == -1) num1 = i;
-                if (pref >= idx2 && num2 == -1) num2 = i;
+                if (!even && num1Red != -1 && num1Green != -1 && num1Blue != -1) break;
+                if (even && num1Red != -1 && num2Red != -1 && num1Green != -1 && num2Green != -1 && num1Blue != -1 && num2Blue != -1) break;
+                prefRed += redFreq[i];
+                prefGreen += greenFreq[i];
+                prefBlue += blueFreq[i];
+                if (prefRed >= idx1 && num1Red == -1) num1Red = i;
+                if (prefRed >= idx2 && num2Red == -1) num2Red = i;
+                if (prefGreen >= idx1 && num1Green == -1) num1Green = i;
+                if (prefGreen >= idx2 && num2Green == -1) num2Green = i;
+                if (prefBlue >= idx1 && num1Blue == -1) num1Blue = i;
+                if (prefBlue >= idx2 && num2Blue == -1) num2Blue = i;
             }
-            if (even) redStats.Med = (num1 + num2) / 2;
-            else      redStats.Med = num1;
-
-            pref = 0; num1 = -1; num2 = -1;
-            for (int i = 0; i < 256; ++i)
+            if (even)
             {
-                if (even && num1 != -1 && num2 != -1) break;
-                if (!even && num1 != -1) break;
-                pref += greenFreq[i];
-                if (pref >= idx1 && num1 == -1) num1 = i;
-                if (pref >= idx2 && num2 == -1) num2 = i;
+                redStats.Med = (num1Red + num2Red) / 2;
+                greenStats.Med = (num1Green + num2Green) / 2;
+                blueStats.Med = (num1Blue + num2Blue) / 2;
             }
-            if(even)    greenStats.Med = (num1 + num2) / 2;
-            else        greenStats.Med = num1;
-
-            pref = 0; num1 = -1; num2 = -1;
-            for (int i = 0; i < 256; ++i)
+            else
             {
-                if (even && num1 != -1 && num2 != -1) break;
-                if (!even && num1 != -1) break;
-                pref += blueFreq[i];
-                if (pref >= idx1 && num1 == -1) num1 = i;
-                if (pref >= idx2 && num2 == -1) num2 = i;
+                redStats.Med = num1Red;
+                greenStats.Med = num1Green;
+                blueStats.Med = num1Blue;
             }
-            if(even)    blueStats.Med = (num1 + num2) / 2;
-            else        blueStats.Med = num1;
 
             double redMean = redStats.Mean;
             double greenMean = greenStats.Mean;
             double blueMean = blueStats.Mean;
 
             double red_sum = 0, green_sum = 0, blue_sum = 0;
-            for (int i = 0; i < result.Height; i++)
-            {
-                for (int j = 0; j < result.Width; j++)
-                {
-                    int red = (int)img2darray[i, j].red;
-                    int green = (int)img2darray[i, j].green;
-                    int blue = (int)img2darray[i, j].blue;
 
-                    red_sum += Math.Pow(red - redMean,2);
-                    green_sum += Math.Pow(green - greenMean, 2);
-                    blue_sum += Math.Pow(blue - blueMean, 2);
-                }
+            for(int i = 0; i < 256; ++i)
+            {
+                red_sum += Math.Pow(i - redMean, 2) * redFreq[i];
+                green_sum += Math.Pow(i - greenMean, 2) * greenFreq[i];
+                blue_sum += Math.Pow(i - blueMean, 2) * blueFreq[i];
             }
 
             redStats.StdDev = Math.Sqrt(red_sum / ((double)size));
@@ -205,7 +195,95 @@ namespace ImageSimilarity
         /// <returns>Top matches (image path & distance score) </returns>
         public static MatchInfo[] FindTopMatches(string queryPath, ImageInfo[] targetImgStats, int numOfTopMatches) 
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            ImageInfo queryStats = new ImageInfo();
+            queryStats = CalculateImageStats(queryPath);
+           
+            MatchInfo[] matchedImages = new MatchInfo[numOfTopMatches];
+
+            SortedSet<MatchInfo> matchedImagesSorted = new SortedSet<MatchInfo>();
+            
+            Task<MatchInfo>[] calculate_threads = new Task<MatchInfo>[targetImgStats.Length];
+            for (int i = 0; i < targetImgStats.Length; i++)
+            {
+                calculate_threads[i] = Task.Run(() => CalculateMatch(queryStats, targetImgStats[i]));
+                matchedImagesSorted.Add(calculate_threads[i].Result);
+            }
+            Task.WaitAll(calculate_threads);
+
+            int k = 0;
+            foreach (MatchInfo match in matchedImagesSorted)
+            {
+                if (k >= numOfTopMatches) break;
+                matchedImages[k++] = match;
+            }
+
+            return matchedImages;
         }
+
+        public static MatchInfo CalculateMatch(ImageInfo a, ImageInfo b)
+        {
+            MatchInfo matchingResult = new MatchInfo();
+            matchingResult.MatchedImgPath = b.Path;
+
+            double sizeA = a.Width * a.Height;
+            double sizeB = b.Width * b.Height;
+
+            double redDP = 0.0, redMagA = 0.0, redMagB = 0.0, 
+                greenDP = 0.0, greenMagA = 0.0, greenMagB = 0.0, 
+                blueDP = 0.0, blueMagA = 0.0, blueMagB = 0.0;
+
+            object lockObj = new object();
+
+            Parallel.For(0, 256,
+            () => new LocalData { redDP = 0.0, greenDP = 0.0, blueDP = 0.0, redMagA = 0.0, redMagB = 0.0, greenMagA = 0.0, greenMagB = 0.0, blueMagA = 0.0, blueMagB = 0.0},
+            (i, loopState, localData) =>
+            {
+                double redai = (a.RedStats.Hist[i]/sizeA), redbi = (b.RedStats.Hist[i]/sizeB), 
+                greenai = (a.GreenStats.Hist[i]/sizeA), greenbi = (b.GreenStats.Hist[i]/sizeB),
+                blueai = (a.BlueStats.Hist[i]/sizeA), bluebi = (b.BlueStats.Hist[i]/sizeB);
+                localData.redDP += redai * redbi;
+                localData.greenDP += greenai * greenbi;
+                localData.blueDP += blueai * bluebi;
+
+                localData.redMagA += redai * redai;
+                localData.redMagB += redbi * redbi;
+                localData.greenMagA += greenai * greenai;
+                localData.greenMagB += greenbi * greenbi;
+                localData.blueMagA += blueai * blueai;
+                localData.blueMagB += bluebi * bluebi;
+                return localData;
+            },
+            localData =>
+            {
+                lock (lockObj)
+                {
+                    redDP += localData.redDP;
+                    greenDP += localData.greenDP;
+                    blueDP += localData.blueDP;
+                    redMagA += localData.redMagA;
+                    redMagB += localData.redMagB;
+                    greenMagA += localData.greenMagA;
+                    greenMagB += localData.greenMagB;
+                    blueMagA += localData.blueMagA;
+                    blueMagB += localData.blueMagB;
+                }
+            });
+
+            double redCosine = redDP/Math.Sqrt(redMagA * redMagB),
+                   greenCosine = greenDP/Math.Sqrt(greenMagA * greenMagB),
+                   blueCosine = blueDP/Math.Sqrt(blueMagA * blueMagB);
+
+            double redAngle = Math.Acos(redCosine) * (180.0 / Math.PI),
+                greenAngle = Math.Acos(greenCosine) * (180.0 / Math.PI),
+                blueAngle = Math.Acos(blueCosine) * (180.0 / Math.PI);
+
+            double avg = (redAngle + greenAngle + blueAngle) / 3.0;
+            matchingResult.MatchScore = avg;
+
+            return matchingResult;
+        }
+
+        private struct LocalData { public double redDP, greenDP, blueDP, redMagA, redMagB, blueMagA, blueMagB, greenMagA, greenMagB;}
     }
 }
