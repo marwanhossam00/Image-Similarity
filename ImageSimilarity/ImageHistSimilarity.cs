@@ -30,8 +30,12 @@ namespace ImageSimilarity
         public ChannelStats BlueStats;
     }
 
-    public struct MatchInfo
+    public struct MatchInfo : IComparable<MatchInfo>
     {
+        public int CompareTo(MatchInfo b)
+        {
+            return this.MatchScore.CompareTo(b.MatchScore);
+        }
         public string MatchedImgPath;
         public double MatchScore;
     }
@@ -194,12 +198,92 @@ namespace ImageSimilarity
             //throw new NotImplementedException();
             ImageInfo queryStats = new ImageInfo();
             queryStats = CalculateImageStats(queryPath);
-
+           
             MatchInfo[] matchedImages = new MatchInfo[numOfTopMatches];
 
-            Parallel.For()
+            SortedSet<MatchInfo> matchedImagesSorted = new SortedSet<MatchInfo>();
+            
+            Task<MatchInfo>[] calculate_threads = new Task<MatchInfo>[targetImgStats.Length];
+            for (int i = 0; i < targetImgStats.Length; i++)
+            {
+                calculate_threads[i] = Task.Run(() => CalculateMatch(queryStats, targetImgStats[i]));
+                matchedImagesSorted.Add(calculate_threads[i].Result);
+            }
+            Task.WaitAll(calculate_threads);
+
+            int k = 0;
+            foreach (MatchInfo match in matchedImagesSorted)
+            {
+                if (k >= numOfTopMatches) break;
+                matchedImages[k++] = match;
+            }
 
             return matchedImages;
         }
+
+        public static MatchInfo CalculateMatch(ImageInfo a, ImageInfo b)
+        {
+            MatchInfo matchingResult = new MatchInfo();
+            matchingResult.MatchedImgPath = b.Path;
+
+            double sizeA = a.Width * a.Height;
+            double sizeB = b.Width * b.Height;
+
+            double redDP = 0.0, redMagA = 0.0, redMagB = 0.0, 
+                greenDP = 0.0, greenMagA = 0.0, greenMagB = 0.0, 
+                blueDP = 0.0, blueMagA = 0.0, blueMagB = 0.0;
+
+            object lockObj = new object();
+
+            Parallel.For(0, 256,
+            () => new LocalData { redDP = 0.0, greenDP = 0.0, blueDP = 0.0, redMagA = 0.0, redMagB = 0.0, greenMagA = 0.0, greenMagB = 0.0, blueMagA = 0.0, blueMagB = 0.0},
+            (i, loopState, localData) =>
+            {
+                double redai = (a.RedStats.Hist[i]/sizeA), redbi = (b.RedStats.Hist[i]/sizeB), 
+                greenai = (a.GreenStats.Hist[i]/sizeA), greenbi = (b.GreenStats.Hist[i]/sizeB),
+                blueai = (a.BlueStats.Hist[i]/sizeA), bluebi = (b.BlueStats.Hist[i]/sizeB);
+                localData.redDP += redai * redbi;
+                localData.greenDP += greenai * greenbi;
+                localData.blueDP += blueai * bluebi;
+
+                localData.redMagA += redai * redai;
+                localData.redMagB += redbi * redbi;
+                localData.greenMagA += greenai * greenai;
+                localData.greenMagB += greenbi * greenbi;
+                localData.blueMagA += blueai * blueai;
+                localData.blueMagB += bluebi * bluebi;
+                return localData;
+            },
+            localData =>
+            {
+                lock (lockObj)
+                {
+                    redDP += localData.redDP;
+                    greenDP += localData.greenDP;
+                    blueDP += localData.blueDP;
+                    redMagA += localData.redMagA;
+                    redMagB += localData.redMagB;
+                    greenMagA += localData.greenMagA;
+                    greenMagB += localData.greenMagB;
+                    blueMagA += localData.blueMagA;
+                    blueMagB += localData.blueMagB;
+                }
+            });
+
+            double redCosine = redDP/Math.Sqrt(redMagA * redMagB),
+                   greenCosine = greenDP/Math.Sqrt(greenMagA * greenMagB),
+                   blueCosine = blueDP/Math.Sqrt(blueMagA * blueMagB);
+
+            double redAngle = Math.Acos(redCosine) * (180.0 / Math.PI),
+                greenAngle = Math.Acos(greenCosine) * (180.0 / Math.PI),
+                blueAngle = Math.Acos(blueCosine) * (180.0 / Math.PI);
+
+            double avg = (redAngle + greenAngle + blueAngle) / 3.0;
+            matchingResult.MatchScore = avg;
+
+            return matchingResult;
+        }
+
+        private struct LocalData { public double redDP, greenDP, blueDP, redMagA, redMagB, blueMagA, blueMagB, greenMagA, greenMagB;}
     }
 }
